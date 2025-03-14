@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace EmployeeManagement.Core.ServicesInterfaces
 {
-    public interface IUnitOfWork
+    public interface ICacheService
     {
-        IEmployeeRepository Employees { get; }
-        IUserRepository Users { get; }
-        Task<int> CompleteAsync();
+        Task<T> GetAsync<T>(string key);
+        Task SetAsync<T>(string key, T value, TimeSpan expiration);
+        Task RemoveAsync(string key);
     }
 }

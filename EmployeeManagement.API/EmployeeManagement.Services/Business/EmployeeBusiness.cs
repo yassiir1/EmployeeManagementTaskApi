@@ -14,17 +14,22 @@ namespace EmployeeManagement.Services.Business
     public class EmployeeBusiness : IEmployeeBusiness
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ICacheService _cacheService;
         private readonly IMapper _mapper;
-        public EmployeeBusiness(IUnitOfWork unitOfWork, IMapper mapper)
+        public EmployeeBusiness(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
+            _cacheService = cacheService;
             _mapper = mapper;
         }
         public async Task CreateEmployeeAsync(CreateEmployeeDto createDto)
         {
             var employee = _mapper.Map<Employee>(createDto);
+
             await _unitOfWork.Employees.AddAsync(employee);
             await _unitOfWork.CompleteAsync();
+            await _cacheService.RemoveAsync("employees_list");
+
         }
 
         public async Task<bool> DeleteEmployeeAsync(int id)
@@ -34,13 +39,25 @@ namespace EmployeeManagement.Services.Business
 
             await _unitOfWork.Employees.DeleteAsync(id);
             await _unitOfWork.CompleteAsync();
+            await _cacheService.RemoveAsync("employees_list");
+
             return true;
         }
 
         public async Task<IEnumerable<EmployeeDto>> GetAllEmployeesAsync()
         {
+            string cacheKey = "employees_list";
+            var cachedEmployees = await _cacheService.GetAsync<IEnumerable<EmployeeDto>>(cacheKey);
+
+            if (cachedEmployees != null)
+            {
+                return cachedEmployees;
+            }
             var employees = await _unitOfWork.Employees.GetAllAsync();
-            return _mapper.Map<IEnumerable<EmployeeDto>>(employees);
+            var ReturnDto = _mapper.Map<IEnumerable<EmployeeDto>>(employees);
+            await _cacheService.SetAsync(cacheKey, ReturnDto, TimeSpan.FromMinutes(10));
+
+            return ReturnDto;
         }
 
         public async Task<EmployeeDto> GetEmployeeByIdAsync(int id)

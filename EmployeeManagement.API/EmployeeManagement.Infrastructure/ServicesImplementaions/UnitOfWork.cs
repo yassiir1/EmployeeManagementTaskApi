@@ -12,11 +12,13 @@ namespace EmployeeManagement.Infrastructure.ServicesImplementaions
     {
         private readonly ApplicationDbContext _context;
         public IEmployeeRepository Employees { get; }
+        public IUserRepository Users { get; }
 
         public UnitOfWork(ApplicationDbContext context)
         {
             _context = context;
             Employees = new EmployeeRepository(_context);
+            Users = new UserRepository(_context);
         }
 
         public async Task<int> CompleteAsync()
